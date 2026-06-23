@@ -8,6 +8,7 @@ let searchQuery = '';
 
 // DOM Elements
 const btnRefresh = document.getElementById('btn-refresh');
+const btnExportCsv = document.getElementById('btn-export-csv');
 const searchInput = document.getElementById('search-input');
 const typeFilters = document.getElementById('type-filters');
 const feedContainer = document.getElementById('feed-container');
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     btnRefresh.addEventListener('click', fetchReleaseNotes);
     btnRetry.addEventListener('click', fetchReleaseNotes);
+    btnExportCsv.addEventListener('click', exportToCSV);
     
     // Live Search
     searchInput.addEventListener('input', (e) => {
@@ -190,10 +192,16 @@ function filterAndRenderFeed() {
             card.innerHTML = `
                 <div class="release-card-header">
                     <span class="badge ${badgeClass}">${note.type}</span>
-                    <button class="btn-select-tweet" aria-label="Tweet this update">
-                        <i data-lucide="twitter" style="width: 14px; height: 14px;"></i>
-                        <span>Tweet Update</span>
-                    </button>
+                    <div class="card-actions">
+                        <button class="btn-copy-clipboard" aria-label="Copy update to clipboard">
+                            <i data-lucide="copy" style="width: 14px; height: 14px;"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button class="btn-select-tweet" aria-label="Tweet this update">
+                            <i data-lucide="twitter" style="width: 14px; height: 14px;"></i>
+                            <span>Tweet</span>
+                        </button>
+                    </div>
                 </div>
                 <div class="release-card-body">
                     ${note.html}
@@ -203,6 +211,10 @@ function filterAndRenderFeed() {
             // Register select-to-tweet event
             const btnTweetSelect = card.querySelector('.btn-select-tweet');
             btnTweetSelect.addEventListener('click', () => openComposer(note));
+            
+            // Register copy-to-clipboard event
+            const btnCopy = card.querySelector('.btn-copy-clipboard');
+            btnCopy.addEventListener('click', () => copyToClipboard(note, btnCopy));
             
             cardsWrapper.appendChild(card);
         });
@@ -307,4 +319,89 @@ function sendTweet() {
     
     // Open X in new window
     window.open(tweetUrl, '_blank', 'width=550,height=420,referrerpolicy=no-referrer');
+}
+
+// Copy update details to clipboard
+function copyToClipboard(note, buttonElement) {
+    const copyText = `[BigQuery ${note.type}] ${note.date}: ${note.text}\nSource: ${note.link}`;
+    navigator.clipboard.writeText(copyText).then(() => {
+        // Visual feedback animation
+        const span = buttonElement.querySelector('span');
+        const icon = buttonElement.querySelector('i');
+        
+        buttonElement.classList.add('copied');
+        if (span) span.textContent = 'Copied!';
+        if (icon) {
+            icon.setAttribute('data-lucide', 'check');
+            if (window.lucide) window.lucide.createIcons();
+        }
+        
+        setTimeout(() => {
+            buttonElement.classList.remove('copied');
+            if (span) span.textContent = 'Copy';
+            if (icon) {
+                icon.setAttribute('data-lucide', 'copy');
+                if (window.lucide) window.lucide.createIcons();
+            }
+        }, 1500);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+
+// Export the currently filtered notes to a CSV file
+function exportToCSV() {
+    const filteredNotes = allNotes.filter(note => {
+        const matchesType = activeTypeFilter === 'all' || note.type.toLowerCase() === activeTypeFilter;
+        const textToSearch = `${note.type} ${note.date} ${note.text}`.toLowerCase();
+        const matchesSearch = textToSearch.includes(searchQuery);
+        return matchesType && matchesSearch;
+    });
+    
+    if (filteredNotes.length === 0) {
+        alert("No release notes found to export.");
+        return;
+    }
+    
+    // CSV Headers
+    const headers = ['ID', 'Date', 'Type', 'URL', 'Description'];
+    
+    // Helper to escape CSV formatting constraints
+    const escapeCSVValue = (val) => {
+        if (val === null || val === undefined) return '';
+        let str = String(val);
+        str = str.replace(/"/g, '""');
+        if (str.includes(',') || str.includes('\n') || str.includes('\r') || str.includes('"')) {
+            str = `"${str}"`;
+        }
+        return str;
+    };
+    
+    // Build CSV
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    
+    filteredNotes.forEach(note => {
+        const row = [
+            escapeCSVValue(note.id),
+            escapeCSVValue(note.date),
+            escapeCSVValue(note.type),
+            escapeCSVValue(note.link),
+            escapeCSVValue(note.text)
+        ];
+        csvRows.push(row.join(','));
+    });
+    
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    
+    const filterSuffix = activeTypeFilter !== 'all' ? `_${activeTypeFilter}` : '';
+    link.setAttribute('download', `bigquery_release_notes${filterSuffix}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

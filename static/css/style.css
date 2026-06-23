@@ -324,6 +324,12 @@ body {
 #stat-issue-box:hover { border-color: var(--clr-issue); }
 
 /* Button Styles */
+.action-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
 .btn {
     background: none;
     border: none;
@@ -476,7 +482,14 @@ body {
 .badge-deprecation { background-color: var(--clr-deprecation-bg); color: var(--clr-deprecation); border: 1px solid rgba(245, 158, 11, 0.2); }
 .badge-update { background-color: rgba(255, 255, 255, 0.05); color: var(--text-primary); border: 1px solid rgba(255, 255, 255, 0.1); }
 
-.btn-select-tweet {
+.card-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-select-tweet,
+.btn-copy-clipboard {
     background: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: var(--text-secondary);
@@ -495,6 +508,18 @@ body {
     background-color: rgba(29, 155, 240, 0.12);
     border-color: rgba(29, 155, 240, 0.3);
     color: #1d9bf0;
+}
+
+.btn-copy-clipboard:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.btn-copy-clipboard.copied {
+    background-color: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.4);
+    color: var(--clr-feature) !important;
 }
 
 /* Card Content Format */
