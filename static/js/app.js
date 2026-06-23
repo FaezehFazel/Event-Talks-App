@@ -9,6 +9,7 @@ let searchQuery = '';
 // DOM Elements
 const btnRefresh = document.getElementById('btn-refresh');
 const btnExportCsv = document.getElementById('btn-export-csv');
+const btnThemeToggle = document.getElementById('btn-theme-toggle');
 const searchInput = document.getElementById('search-input');
 const typeFilters = document.getElementById('type-filters');
 const feedContainer = document.getElementById('feed-container');
@@ -34,6 +35,7 @@ const btnTweet = document.getElementById('btn-tweet');
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
+    initializeTheme();
     fetchReleaseNotes();
     setupEventListeners();
 });
@@ -43,6 +45,7 @@ function setupEventListeners() {
     btnRefresh.addEventListener('click', fetchReleaseNotes);
     btnRetry.addEventListener('click', fetchReleaseNotes);
     btnExportCsv.addEventListener('click', exportToCSV);
+    btnThemeToggle.addEventListener('click', toggleTheme);
     
     // Live Search
     searchInput.addEventListener('input', (e) => {
@@ -404,4 +407,40 @@ function exportToCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// Initialize theme based on saved user preference or system preference
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+        updateThemeToggleIcon('light');
+    } else {
+        document.documentElement.classList.remove('light-theme');
+        updateThemeToggleIcon('dark');
+    }
+}
+
+// Toggle between light and dark modes
+function toggleTheme() {
+    const isLight = document.documentElement.classList.toggle('light-theme');
+    const newTheme = isLight ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    updateThemeToggleIcon(newTheme);
+}
+
+// Update the theme toggle button icon
+function updateThemeToggleIcon(theme) {
+    const icon = btnThemeToggle.querySelector('i');
+    if (!icon) return;
+    
+    if (theme === 'light') {
+        icon.setAttribute('data-lucide', 'moon');
+    } else {
+        icon.setAttribute('data-lucide', 'sun');
+    }
+    
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
 }
